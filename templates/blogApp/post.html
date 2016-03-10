@@ -1,0 +1,116 @@
+{% include "blogApp/styleandjs.html" %}
+{% if post %}
+    <h1>{{ post.post_title }}</h1>
+    <p>{{  post.post_content }}</p>
+    <div style="width:400px; margin:5px; border:1px solid;">Comments:
+    {%for comment in post.comment_set.all%}
+        <div style="border-bottom:1px dotted; min-height: 100px; overflow: hidden; margin-bottom:5px;">
+            <div style="float:left;">
+                <div>{{comment.comment_user}}</div>
+                <div>{{comment.comment_content}}</div>
+                <div>{{comment.comment_date}}</div>
+                <div style="display: none;" class="comment_id">{{comment.id}}sdlfj;jlajl;sdflsfjs fslfjslfsjfsaf;afdssdjsldjsdlfsdlfjsljsdlfjslfjslfjslkjsdlkjklfj</div>
+            </div>
+            {% ifequal comment.comment_user request.user.username %}
+            <div style="float:right;">
+                <a href="" class="delete_comment">Delete</a>
+            </div>
+            {% endifequal %}
+        </div>
+    {%endfor%}
+    </div>
+{#    Just to check wether session exist#}
+{#    <input type="text" value="{{ request.user.id }}">#}
+    {% if request.user.id == None %}
+    <div>
+        <a id="comment_btn" href="">Click to comment</a>
+    </div>
+    <div>
+        <form id="login" >{% csrf_token %}
+            <div><input type="text" name="usr" id="usr" placeholder="Username"></div>
+            <div><input type="password" name="pwd" id="pwd"></div>
+            <div><input type="submit" id="login_btn" value="login"></div>
+        </form>
+    </div>
+    {% else %}
+    <div style="width:400px; margin-top:40px;" id="new_comment_box">
+        <form method="post" id="comment" action="{% url 'blogApp:comment' post.pk%}">{% csrf_token %}
+            <div><input type="text" name="user" placeholder="Username" id="username" value="{{ request.user }}" readonly ></div>
+            <div><textarea name="content" placeholder="Your comment here..."></textarea></div>
+            <div><input type="submit" value="post"></div>
+        </form>
+        <a href="{% url 'auth:logout' %}?next=/post"><input type="button" id="logout" value="Logout"></a>
+    </div>
+    {% endif %}
+    <script>
+        $(function(){
+            $.ajaxSetup({
+             headers: { "X-CSRFToken": getCookie("csrftoken") }
+            });
+            $('#login').hide();
+
+            $('#login').on('submit', function(e){
+                var data = {
+                    'usr' : $('#usr').val(),
+                    'pwd' : $('#pwd').val()
+                }
+                e.preventDefault();
+                console.log(data);
+                $.ajax({
+                    'url':'//'+window.location.hostname+'/post/login/',
+                    'method':'post',
+                    'data':data,
+                    'dataType': "json",
+                    'success': function(response){
+                        console.log(response)
+                        $('#login').hide();
+                        $('#new_comment_box').show();
+                        $('#username').val(response);
+                        location.reload();
+                    }
+                });
+            });
+            $('#comment_btn').click(function(e){
+                e.preventDefault();
+                $(this).hide();
+                $('#login').show();
+            });
+            $('.delete_comment').on('click', function (e) {
+                e.preventDefault();
+                var data={
+                    'comment_id': $(this).parent().parent().find('.comment_id').html()
+                }
+                console.log(data);
+                $.ajax({
+                    'url':'//'+window.location.hostname+'/post/delete/',
+                    'method':'post',
+                    'data':data,
+                    'dataType': "json",
+                    'success': function(res){
+                        console.log(res);
+                    }
+                });
+                $(this).parent().parent().remove();
+            });
+
+
+        })
+        function getCookie(c_name)
+        {
+            if (document.cookie.length > 0)
+            {
+                c_start = document.cookie.indexOf(c_name + "=");
+                if (c_start != -1)
+                {
+                    c_start = c_start + c_name.length + 1;
+                    c_end = document.cookie.indexOf(";", c_start);
+                    if (c_end == -1) c_end = document.cookie.length;
+                    return unescape(document.cookie.substring(c_start,c_end));
+                }
+            }
+            return "";
+        }
+    </script>
+{% else %}
+    <p>No posts are available.</p>
+{% endif %}
